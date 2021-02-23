@@ -80,6 +80,7 @@ public:
     AsciiBlock(const int height, const int width, const char asciiCharacter) : m_Height(height), m_Width(width)
     {
 
+        m_Block.reserve(height);
         for (int i = 0; i < m_Height; i++)
         {
             m_Block.emplace_back(asciiCharacter, m_Width);
