@@ -5,7 +5,7 @@
 class AsciiLine{
 
 private:
-    char *m_Line;
+    char* m_Line;
     int m_Size;
 
 //Constructors
@@ -40,7 +40,7 @@ public:
     AsciiLine(const AsciiLine& asciiLine) : m_Size(asciiLine.m_Size)
     {
         m_Line = new char[m_Size];
-        memcpy(m_Line, asciiLine.m_Line, m_Size);
+        memcpy(m_Line, asciiLine.m_Line, asciiLine.m_Size);
     }
 
     ~AsciiLine() {
@@ -50,8 +50,8 @@ public:
 //Methods
 public:
 
-    void replace(int index, const char* string)
-    {
+    void replace(int index, const char* string) {
+
             //Replace the char's with the char's in string, -1 because the '\n' is not needed here
             for (int i  = 0; i < strlen(string) - 1; i++)
             {
@@ -60,8 +60,7 @@ public:
 
     }
 
-    const char* toString()
-    {
+    const char* toString() const {
         return m_Line;
     }
 
@@ -73,8 +72,9 @@ private:
 
     const int m_Height;
     const int m_Width;
-    std::vector<AsciiLine> m_Block;
 
+protected:
+    std::vector<AsciiLine> m_Block;
 public:
 
     AsciiBlock(const int height, const int width, const char asciiCharacter) : m_Height(height), m_Width(width)
@@ -88,8 +88,7 @@ public:
 
     }
 
-    AsciiLine& getAsciiLine(int index)
-    {
+    const AsciiLine& getAsciiLine(int index) const {
         return m_Block.at(index);
     }
 
@@ -97,17 +96,13 @@ public:
         return m_Height;
     }
 
-    int getWidth() const {
-        return m_Width;
-    }
+    friend std::ostream& operator<<(std::ostream &os, const AsciiBlock &block) {
 
-    void print() {
-
-        //Print the entire frame (grid) at a time by constructing it into one string.
         std::string entireBlock;
-        for (AsciiLine& line : m_Block) { entireBlock += line.toString(); }
+        for (const AsciiLine& line : block.m_Block) { entireBlock += line.toString(); }
 
-        std::cout << entireBlock;
+        os << entireBlock;
+        return os;
     }
 
 
@@ -118,33 +113,42 @@ class AsciiGrid: public AsciiBlock {
 
 private:
 
-    std::vector<AsciiBlock*> m_PlottedAscii;
+    struct PlottedBlock {
+
+        const AsciiBlock* asciiBlock;
+        const int x, y;
+
+        PlottedBlock(const AsciiBlock* asciiBlock, int x, int y) : asciiBlock(asciiBlock), x(x), y(y)
+        {
+        }
+
+    };
+
+    std::vector<PlottedBlock> m_PlottedAscii;
 
 public:
 
-    static const int width{15};
+    static const int width{50};
 
-    static const int height{15};
+    static const int height{50};
 
 public:
 
-    AsciiGrid() : AsciiBlock(height, width, ' ')
+    AsciiGrid() : AsciiBlock(height, width, '`')
     {
     }
 
-    void plot(AsciiBlock *asciiBlock, int const xOrigin, int const yOrigin)
+    //Copy AsciiBlock to allow for the same block to be graphed
+    void plot(AsciiBlock asciiBlock, int x, int y)
     {
         //Add to list of objects graphed
-        m_PlottedAscii.push_back((AsciiBlock *const) asciiBlock);
+        m_PlottedAscii.emplace_back(&asciiBlock, x, y);
 
-        for (int i = yOrigin; i < asciiBlock->getHeight() + yOrigin; i++)
+        //Replace existing AsciiLine's with asciiBlock's AsciiLines
+        for (int i = y; i < asciiBlock.getHeight() + y; i++)
         {
-            this->getAsciiLine(i).replace(
-                    xOrigin,
-                    asciiBlock->getAsciiLine(0).toString()
-                    );
+            m_Block.at(i).replace(x,asciiBlock.getAsciiLine(i - y).toString());
         }
-
 
     }
 
@@ -153,10 +157,12 @@ public:
 int main()
 {
 
-    AsciiBlock* l = new AsciiBlock(3, 3, 'e');
+    AsciiBlock f(10, 5, '#');
     AsciiGrid a;
-    a.plot(l, 10, 10);
-    a.print();
+    a.plot(f, 20, 10);
+//    std::cout << a;
+    a.plot(f, 0, 0);
+    std::cout << a;
 
     return 0;
 }
